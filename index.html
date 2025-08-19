@@ -23,9 +23,17 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Noto Sans SC', sans-serif; background-image: linear-gradient(to right top, #5a8c43, #68974d, #77a158, #85ac62, #93b76d);
-            background-size: 400% 400%; animation: gradientBG 15s ease infinite; color: var(--text-color); display: flex; overflow-x: hidden;
+            background-size: 400% 400%; color: var(--text-color); display: flex; overflow-x: hidden;
             font-size: var(--font-size-base); line-height: 1.6;
         }
+        
+        /* 桌面端保留温和的背景动画 */
+        @media (min-width: 769px) {
+            body {
+                animation: gradientBG 25s ease infinite;
+            }
+        }
+        
         @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
         .glass-effect {
             background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
