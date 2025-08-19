@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DailySnapshot 单元测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+        
+        .test-controls {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 0 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        #test-output {
+            background: #1e1e1e;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            max-height: 600px;
+            overflow-y: auto;
+            border: 1px solid #444;
+        }
+        
+        .status {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 18px;
+            font-weight: 500;
+        }
+        
+        .status.running {
+            color: #f39c12;
+        }
+        
+        .status.success {
+            color: #27ae60;
+        }
+        
+        .status.error {
+            color: #e74c3c;
+        }
+        
+        .info-box {
+            background: #e8f4fd;
+            border: 1px solid #bee5eb;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .info-box h3 {
+            margin-top: 0;
+            color: #0c5460;
+        }
+        
+        .info-box ul {
+            margin-bottom: 0;
+        }
+        
+        .info-box li {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 DailySnapshot 单元测试</h1>
+        
+        <div class="info-box">
+            <h3>📋 测试说明</h3>
+            <ul>
+                <li><strong>数据模型验证</strong>：测试 DailySnapshot 类的构造函数、数据转换和验证功能</li>
+                <li><strong>数据完整性</strong>：验证任务、反馈、打卡数据的正确性和一致性</li>
+                <li><strong>序列化功能</strong>：测试 JSON 序列化和反序列化的正确性</li>
+                <li><strong>边界条件</strong>：测试各种异常情况和边界值的处理</li>
+                <li><strong>数据验证器</strong>：测试 DataValidator 类的各项验证功能</li>
+            </ul>
+        </div>
+        
+        <div class="test-controls">
+            <button class="btn" onclick="runDailySnapshotTests()">🚀 运行 DailySnapshot 测试</button>
+            <button class="btn" onclick="runDataValidatorTests()">🔍 运行 DataValidator 测试</button>
+            <button class="btn" onclick="runDataMigratorTests()">🔄 运行 DataMigrator 测试</button>
+            <button class="btn" onclick="runAllTests()">🎯 运行所有测试</button>
+            <button class="btn" onclick="clearOutput()">🗑️ 清空输出</button>
+        </div>
+        
+        <div id="status" class="status"></div>
+        
+        <div id="test-output"></div>
+    </div>
+    
+    <!-- 引入被测试的模块 -->
+    <script src="js/models/DailySnapshot.js"></script>
+    <script src="js/utils/DataValidator.js"></script>
+    <script src="js/tests/DailySnapshot.test.js"></script>
+    
+    <script>
+        const output = document.getElementById('test-output');
+        const status = document.getElementById('status');
+        
+        // 重写 console 方法以显示在页面上
+        const originalConsole = {
+            log: console.log,
+            error: console.error
+        };
+        
+        function appendToOutput(message, type = 'log') {
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = type === 'error' ? '❌' : '📝';
+            output.textContent += `[${timestamp}] ${prefix} ${message}\n`;
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        console.log = function(...args) {
+            originalConsole.log(...args);
+            appendToOutput(args.join(' '), 'log');
+        };
+        
+        console.error = function(...args) {
+            originalConsole.error(...args);
+            appendToOutput(args.join(' '), 'error');
+        };
+        
+        // 测试运行函数
+        async function runDailySnapshotTests() {
+            try {
+                status.textContent = '🔄 正在运行 DailySnapshot 测试...';
+                status.className = 'status running';
+                
+                console.log('\n' + '='.repeat(60));
+                console.log('🧪 开始运行 DailySnapshot 单元测试');
+                console.log('='.repeat(60));
+                
+                const success = await window.runDailySnapshotTests();
+                
+                if (success) {
+                    status.textContent = '✅ DailySnapshot 测试全部通过！';
+                    status.className = 'status success';
+                } else {
+                    status.textContent = '❌ DailySnapshot 测试存在失败项';
+                    status.className = 'status error';
+                }
+            } catch (error) {
+                console.error('测试运行出错:', error.message);
+                status.textContent = '💥 测试运行出错';
+                status.className = 'status error';
+            }
+        }
+        
+        async function runDataValidatorTests() {
+            try {
+                status.textContent = '🔄 正在运行 DataValidator 测试...';
+                status.className = 'status running';
+                
+                console.log('\n' + '='.repeat(60));
+                console.log('🔍 开始运行 DataValidator 单元测试');
+                console.log('='.repeat(60));
+                
+                // 创建 DataValidator 测试
+                const testRunner = new TestRunner();
+                
+                // 测试日期验证
+                testRunner.test('DataValidator.isValidDate - 有效日期', () => {
+                    testRunner.assert(DataValidator.isValidDate('2024-01-15'), '标准日期格式应该有效');
+                    testRunner.assert(DataValidator.isValidDate('2024-12-31'), '年末日期应该有效');
+                    testRunner.assert(DataValidator.isValidDate('2024-02-29'), '闰年2月29日应该有效');
+                });
+                
+                testRunner.test('DataValidator.isValidDate - 无效日期', () => {
+                    testRunner.assert(!DataValidator.isValidDate('invalid-date'), '无效格式应该返回false');
+                    testRunner.assert(!DataValidator.isValidDate('2024-13-01'), '无效月份应该返回false');
+                    testRunner.assert(!DataValidator.isValidDate('2024-02-30'), '无效日期应该返回false');
+                    testRunner.assert(!DataValidator.isValidDate(''), '空字符串应该返回false');
+                });
+                
+                // 测试任务数据验证
+                testRunner.test('DataValidator.validateTaskData - 有效任务数据', () => {
+                    const validTasks = [
+                        { text: '任务1', completed: true },
+                        { text: '任务2', completed: false }
+                    ];
+                    const result = DataValidator.validateTaskData(validTasks);
+                    testRunner.assert(result.isValid, '有效任务数据应该通过验证');
+                    testRunner.assertEqual(result.errors.length, 0, '不应该有错误');
+                });
+                
+                testRunner.test('DataValidator.validateTaskData - 无效任务数据', () => {
+                    const invalidTasks = [
+                        { text: '', completed: true }, // 空文本
+                        { completed: false }, // 缺少text
+                        { text: '任务3' } // 缺少completed
+                    ];
+                    const result = DataValidator.validateTaskData(invalidTasks);
+                    testRunner.assert(!result.isValid, '无效任务数据应该验证失败');
+                    testRunner.assert(result.errors.length > 0, '应该有错误信息');
+                });
+                
+                // 测试反馈数据验证
+                testRunner.test('DataValidator.validateFeedbackData - 有效反馈数据', () => {
+                    const validFeedback = {
+                        focus: 4,
+                        motivation: 3,
+                        highlight: '今日亮点',
+                        challenge: '遇到的挑战'
+                    };
+                    const result = DataValidator.validateFeedbackData(validFeedback);
+                    testRunner.assert(result.isValid, '有效反馈数据应该通过验证');
+                });
+                
+                testRunner.test('DataValidator.validateFeedbackData - 无效反馈数据', () => {
+                    const invalidFeedback = {
+                        focus: 6, // 超出范围
+                        motivation: 0, // 超出范围
+                        highlight: '',
+                        challenge: ''
+                    };
+                    const result = DataValidator.validateFeedbackData(invalidFeedback);
+                    testRunner.assert(!result.isValid, '无效反馈数据应该验证失败');
+                });
+                
+                // 测试完整快照验证
+                testRunner.test('DataValidator.validateSnapshot - 完整有效快照', () => {
+                    const validSnapshot = {
+                        version: '1.0.0',
+                        date: '2024-01-15',
+                        timestamp: '2024-01-15T23:59:59.999Z',
+                        tasks: {
+                            total: 2,
+                            completed: 1,
+                            completionRate: 0.5,
+                            items: [
+                                { text: '任务1', completed: true },
+                                { text: '任务2', completed: false }
+                            ]
+                        },
+                        feedback: {
+                            focus: 4,
+                            motivation: 3
+                        }
+                    };
+                    const result = DataValidator.validateSnapshot(validSnapshot);
+                    testRunner.assert(result.isValid, '有效快照应该通过验证');
+                });
+                
+                const success = await testRunner.run();
+                
+                if (success) {
+                    status.textContent = '✅ DataValidator 测试全部通过！';
+                    status.className = 'status success';
+                } else {
+                    status.textContent = '❌ DataValidator 测试存在失败项';
+                    status.className = 'status error';
+                }
+            } catch (error) {
+                console.error('DataValidator 测试运行出错:', error.message);
+                status.textContent = '💥 DataValidator 测试运行出错';
+                status.className = 'status error';
+            }
+        }
+        
+        async function runDataMigratorTests() {
+            try {
+                status.textContent = '🔄 正在运行 DataMigrator 测试...';
+                status.className = 'status running';
+                
+                console.log('\n' + '='.repeat(60));
+                console.log('🔄 开始运行 DataMigrator 单元测试');
+                console.log('='.repeat(60));
+                
+                const success = await window.runDataMigratorTests();
+                
+                if (success) {
+                    status.textContent = '✅ DataMigrator 测试全部通过！';
+                    status.className = 'status success';
+                } else {
+                    status.textContent = '❌ DataMigrator 测试存在失败项';
+                    status.className = 'status error';
+                }
+            } catch (error) {
+                console.error('DataMigrator 测试运行出错:', error.message);
+                status.textContent = '💥 DataMigrator 测试运行出错';
+                status.className = 'status error';
+            }
+        }
+        
+        async function runAllTests() {
+            console.log('\n' + '🎯'.repeat(20));
+            console.log('开始运行所有测试套件');
+            console.log('🎯'.repeat(20));
+            
+            await runDailySnapshotTests();
+            await new Promise(resolve => setTimeout(resolve, 1000)); // 短暂延迟
+            await runDataValidatorTests();
+            await new Promise(resolve => setTimeout(resolve, 1000)); // 短暂延迟
+            await runDataMigratorTests();
+            
+            console.log('\n' + '🏁'.repeat(20));
+            console.log('所有测试套件运行完成');
+            console.log('🏁'.repeat(20));
+        }
+        
+        function clearOutput() {
+            output.textContent = '';
+            status.textContent = '';
+            status.className = 'status';
+        }
+        
+        // 页面加载完成后显示欢迎信息
+        window.addEventListener('load', () => {
+            console.log('🎉 DailySnapshot 测试环境已准备就绪');
+            console.log('📚 点击上方按钮开始运行测试');
+            console.log('💡 测试将验证数据模型的各项功能和边界条件');
+        });
+    </script>
+</body>
+</html>
