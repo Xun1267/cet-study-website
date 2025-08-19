@@ -306,9 +306,39 @@
         }
 
         /* 新增：主页问候与介绍样式 */
-        .greeting-top { margin-bottom: 18px; }
+        .greeting-top { margin-bottom: 18px; position: relative; }
         .greeting-top h2 { font-size: var(--font-size-heading); font-weight: 600; letter-spacing: 0.5px; }
         .greeting-top h2 span { color: var(--accent-text); }
+        
+        /* 四六级考试倒计时内联样式 */
+        .exam-countdown-inline {
+            font-size: 14px;
+            color: var(--accent-text);
+            font-weight: 500;
+            margin-left: 8px;
+        }
+        .exam-countdown-inline #cet-title {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+        .exam-countdown-inline #cet-days {
+            color: #e11d48;
+            font-weight: 700;
+            font-size: 16px;
+        }
+        
+        /* 响应式适配 */
+        @media (max-width: 768px) {
+            .exam-countdown-inline {
+                font-size: 12px;
+                display: block;
+                margin-left: 0;
+                margin-top: 5px;
+            }
+            .exam-countdown-inline #cet-days {
+                font-size: 14px;
+            }
+        }
 
         .intro-section { display: flex; justify-content: flex-start; margin: 10px 0 26px; width: 100%; }
         .dashboard-grid .intro-section { grid-column: 1 / -1; }
@@ -532,7 +562,7 @@
     <main class="main-content">
         <!-- 顶部问候 -->
         <div class="greeting-top">
-            <h2>你好，<span id="greet-name">备考小能手</span></h2>
+            <h2>你好，<span id="greet-name">备考小能手</span><span class="exam-countdown-inline" id="cet-countdown">，距离<span id="cet-title">四六级考试</span>还有<span id="cet-days">--</span>天</span></h2>
         </div>
 
         <!-- 【视图1】仪表盘 -->
@@ -2486,13 +2516,76 @@
             // 初始化反馈模块
             initFeedbackCard();
             updateFeedbackChart();
+            
+            // 初始化四六级考试倒计时
+            initCETCountdown();
         });
+        
+        // 四六级考试倒计时功能
+        function initCETCountdown() {
+            // 四六级考试时间（根据官方发布时间调整）
+            const cetExams = [
+                { name: '2024年12月四六级', date: new Date('2024-12-14T09:00:00') },
+                { name: '2025年6月四六级', date: new Date('2025-06-14T09:00:00') },
+                { name: '2025年12月四六级', date: new Date('2025-12-13T09:00:00') },
+                { name: '2026年6月四六级', date: new Date('2026-06-14T09:00:00') },
+                { name: '2026年12月四六级', date: new Date('2026-12-13T09:00:00') }
+            ];
+            
+            function updateCountdown() {
+                const now = new Date();
+                let nextExam = null;
+                
+                // 找到下一次考试
+                for (let exam of cetExams) {
+                    if (exam.date > now) {
+                        nextExam = exam;
+                        break;
+                    }
+                }
+                
+                const countdownElement = document.getElementById('cet-countdown');
+                const titleElement = document.getElementById('cet-title');
+                const daysElement = document.getElementById('cet-days');
+                
+                if (!countdownElement || !titleElement || !daysElement) {
+                    console.log('倒计时元素未找到');
+                    return;
+                }
+                
+                if (nextExam) {
+                    const timeDiff = nextExam.date.getTime() - now.getTime();
+                    const days = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+                    
+                    titleElement.textContent = nextExam.name;
+                    daysElement.textContent = days > 0 ? days : 0;
+                    
+                    // 根据剩余天数设置不同的颜色
+                    if (days <= 30) {
+                        daysElement.style.color = '#dc2626';
+                    } else if (days <= 60) {
+                        daysElement.style.color = '#d97706';
+                    } else {
+                        daysElement.style.color = '#e11d48';
+                    }
+                } else {
+                    titleElement.textContent = '暂无考试安排';
+                    daysElement.textContent = '-';
+                    daysElement.style.color = '#6b7280';
+                }
+            }
+            
+            // 立即更新一次
+            updateCountdown();
+            
+            // 每小时更新一次倒计时
+            setInterval(updateCountdown, 3600000);
+        }
     </script>
 
     <!-- 页面版权水印 -->
     <div class="watermark">
-        <p>Agora工作组</p>
-        <p>本网站由Agora工作组维护</p>
+        <p>本网站由Agora工作组提供技术支持</p>
     </div>
 </body>
 </html>
