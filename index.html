@@ -1150,9 +1150,9 @@
     <!-- Excel导出库：SheetJS CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- Excel导出器 -->
-    <script src="./js/services/ExcelExporter.js"></script>
+    <script src="js/services/ExcelExporter.js"></script>
     <!-- 集成测试 -->
-    <script src="./js/tests/HistoryIntegration.test.js"></script>
+    <script src="js/tests/HistoryIntegration.test.js"></script>
     <script>
         function editNickname() {
             const current = localStorage.getItem('nickname') || '备考小能手';
@@ -1505,7 +1505,7 @@
             async function initHistoryView() {
                 try {
                     // 动态导入历史数据管理器
-                    const { HistoryDataManager } = await import('./js/utils/HistoryDataManager.js');
+                    const { HistoryDataManager } = await import('js/utils/HistoryDataManager.js');
                     historyDataManager = new HistoryDataManager();
                     
                     // 加载统计数据
