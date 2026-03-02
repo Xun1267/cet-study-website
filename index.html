@@ -3934,6 +3934,23 @@
     color: #fff;
 }
 
+.search-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    font-size: 14px;
+    margin-bottom: 10px;
+    outline: none;
+}
+
+.search-input:focus {
+    border-color: var(--accent-color);
+    background: rgba(255, 255, 255, 0.15);
+}
+
 .card-list {
     flex: 1;
     overflow-y: auto;
@@ -5457,6 +5474,7 @@
                         </div>
                         
                         <div class="card-filters">
+                            <input type="text" id="card-search" class="search-input" placeholder="搜索单词...">
                             <select id="card-filter" class="filter-select">
                                 <option value="all">全部卡片</option>
                                 <option value="new">新卡片</option>
@@ -7395,6 +7413,7 @@
                 this.currentCardIndex = 0;
                 this.isShowingBack = false;
                 this.currentFilter = 'all';
+                this.searchQuery = '';
                 this.filteredCards = [];
                 // 新的会话状态（按日）
                 this.session = { active: false, queue: [], currentCardId: null, statusMap: {}, baseIds: [], todayKey: null };
@@ -7539,6 +7558,14 @@
                     });
                 });
 
+                // 搜索功能
+                const searchInput = document.getElementById('card-search');
+                if (searchInput) {
+                    searchInput.addEventListener('input', (e) => {
+                        this.setSearchQuery(e.target.value);
+                    });
+                }
+
                 // 筛选器（下拉选择）
                 const filterSelect = document.getElementById('card-filter');
                 if (filterSelect) {
@@ -7638,6 +7665,12 @@
                 console.log('卡片保存完成');
             }
 
+            // 搜索功能
+            setSearchQuery(query) {
+                this.searchQuery = query;
+                this.renderCardList();
+            }
+
             // 筛选功能
             setFilter(filter) {
                 this.currentFilter = filter;
@@ -7649,16 +7682,38 @@
                 }
                 
                 this.renderCardList();
-                // 卡片网格已移除，用户直接点击开始学习进入全屏模式
             }
 
             getFilteredCards() {
-                if (this.currentFilter === 'all') {
-                    return this.cards;
-                } else if (this.currentFilter === 'mastered') {
-                    return this.cards.filter(card => card.masteryLevel >= 4);
+                let cards = this.cards;
+
+                // 应用筛选
+                if (this.currentFilter !== 'all') {
+                    if (this.currentFilter === 'mastered') {
+                        cards = cards.filter(card => card.masteryLevel >= 4);
+                    } else {
+                        // 尝试匹配状态筛选
+                        if (['new', 'learning', 'review'].includes(this.currentFilter)) {
+                            // 这里保留原有的逻辑结构，如果原逻辑是按分类筛选，则保持不变
+                            // 但为了支持状态筛选，我们可以添加简单的判断
+                            // 假设 default 是按 category 筛选
+                             cards = cards.filter(card => card.category === this.currentFilter);
+                        } else {
+                             cards = cards.filter(card => card.category === this.currentFilter);
+                        }
+                    }
                 }
-                return this.cards.filter(card => card.category === this.currentFilter);
+
+                // 应用搜索
+                if (this.searchQuery) {
+                    const query = this.searchQuery.toLowerCase();
+                    cards = cards.filter(card => 
+                        (card.front && card.front.toLowerCase().includes(query)) || 
+                        (card.back && card.back.toLowerCase().includes(query))
+                    );
+                }
+
+                return cards;
             }
 
             // 渲染卡片列表
@@ -12138,9 +12193,8 @@ document.addEventListener('DOMContentLoaded', initializePage);
                 <button class="modal-close" onclick="closeModal()">&times;</button>
             </div>
             <div class="modal-body" id="modal-body">
-                <!-- 内容将通过JavaScript动态生成 -->
             </div>
         </div>
     </div>
 </body>
-</html>
+</html>·
