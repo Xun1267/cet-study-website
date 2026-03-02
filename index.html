@@ -3792,6 +3792,7 @@
 }
 
 .btn-study,
+.btn-edit,
 .btn-delete {
     padding: 6px 12px;
     border: none;
@@ -3810,6 +3811,17 @@
 
 .btn-study:hover {
     background: var(--accent-color-hover);
+    transform: translateY(-1px);
+}
+
+.btn-edit {
+    background: #3b82f6;
+    color: white;
+    flex: 1;
+}
+
+.btn-edit:hover {
+    background: #2563eb;
     transform: translateY(-1px);
 }
 
@@ -5806,6 +5818,22 @@
             </form>
         </div>
     </div>
+
+    <!-- ======================= 【新增】删除确认模态框 ======================= -->
+    <div id="confirm-modal" class="flashcard-modal">
+        <div class="flashcard-modal-content" style="max-width: 400px;">
+            <div class="flashcard-modal-header" style="justify-content: center; border-bottom: none; padding-bottom: 0;">
+                <h2 style="color: #ef4444;">⚠️ 确认删除</h2>
+            </div>
+            <div style="padding: 20px; text-align: center; color: rgba(255, 255, 255, 0.8);">
+                <p>确定要删除这张卡片吗？此操作无法撤销。</p>
+            </div>
+            <div class="form-actions" style="justify-content: center; gap: 15px; margin-top: 0;">
+                <button type="button" class="btn-cancel" id="confirm-cancel">取消</button>
+                <button type="button" class="btn-save" id="confirm-ok" style="background-color: #ef4444; border-color: #ef4444;">确认删除</button>
+            </div>
+        </div>
+    </div>
     
     <!-- 轻量图表库：Chart.js CDN（多备用源） -->
         <script src="https://cdn.jsdelivr.net/npm/chart.js" onerror="loadChartJSFallback()"></script>
@@ -7417,11 +7445,14 @@
                 this.filteredCards = [];
                 // 新的会话状态（按日）
                 this.session = { active: false, queue: [], currentCardId: null, statusMap: {}, baseIds: [], todayKey: null };
+                this.editingCardId = null;
+                this.deleteTargetId = null;
                 this.init();
             }
 
             init() {
                 this.bindEvents();
+                this.initDeleteModal();
                 this.updateStats();
                 this.renderCardList();
                 // 初始状态不显示卡片网格，等待用户点击开始学习
@@ -7614,15 +7645,51 @@
                 document.getElementById('card-front').focus();
             }
 
+            // 编辑卡片
+            editCard(id) {
+                const card = this.cards.find(c => c.id === id);
+                if (!card) return;
+
+                this.editingCardId = id;
+                
+                // 填充表单
+                document.getElementById('card-front').value = card.front;
+                document.getElementById('card-back').value = card.back;
+                document.getElementById('card-category').value = card.category;
+                document.getElementById('card-difficulty').value = card.difficulty;
+                
+                // 设置复习模式
+                const reviewMode = card.reviewMode || 'smart';
+                const radio = document.querySelector(`input[name="review-mode"][value="${reviewMode}"]`);
+                if (radio) radio.checked = true;
+                
+                if (reviewMode === 'scheduled' && card.scheduleDate) {
+                    document.getElementById('schedule-date-group').style.display = 'block';
+                    document.getElementById('schedule-date').value = card.scheduleDate;
+                } else {
+                    document.getElementById('schedule-date-group').style.display = 'none';
+                }
+
+                // 修改标题
+                const title = document.querySelector('.flashcard-modal-header h2');
+                if (title) title.textContent = '编辑卡片';
+
+                this.openNewCardModal();
+            }
+
             closeNewCardModal() {
                 document.getElementById('flashcard-modal').style.display = 'none';
                 document.getElementById('flashcard-form').reset();
                 document.getElementById('schedule-date-group').style.display = 'none';
+                this.editingCardId = null;
+                
+                const title = document.querySelector('.flashcard-modal-header h2');
+                if (title) title.textContent = '新建卡片';
             }
 
-            // 保存新卡片
+            // 保存卡片（新建或更新）
             saveNewCard() {
-                console.log('开始保存新卡片...');
+                console.log('开始保存卡片...');
                 const front = document.getElementById('card-front').value.trim();
                 const back = document.getElementById('card-back').value.trim();
                 const category = document.getElementById('card-category').value;
@@ -7637,31 +7704,50 @@
                     return;
                 }
 
-                const newCard = {
-                    id: Date.now(),
-                    front,
-                    back,
-                    category,
-                    difficulty,
-                    reviewMode,
-                    scheduleDate: reviewMode === 'scheduled' ? scheduleDate : null,
-                    createdAt: new Date().toISOString(),
-                    lastReviewed: null,
-                    reviewCount: 0,
-                    masteryLevel: 0
-                };
+                if (this.editingCardId) {
+                    // 更新现有卡片
+                    const index = this.cards.findIndex(c => c.id === this.editingCardId);
+                    if (index !== -1) {
+                        this.cards[index] = {
+                            ...this.cards[index],
+                            front,
+                            back,
+                            category,
+                            difficulty,
+                            reviewMode,
+                            scheduleDate: reviewMode === 'scheduled' ? scheduleDate : null
+                        };
+                        this.showToast('卡片更新成功！');
+                    }
+                } else {
+                    // 创建新卡片
+                    const newCard = {
+                        id: Date.now(),
+                        front,
+                        back,
+                        category,
+                        difficulty,
+                        reviewMode,
+                        scheduleDate: reviewMode === 'scheduled' ? scheduleDate : null,
+                        createdAt: new Date().toISOString(),
+                        lastReviewed: null,
+                        reviewCount: 0,
+                        masteryLevel: 0
+                    };
+                    console.log('创建新卡片:', newCard);
+                    this.cards.push(newCard);
+                    this.showToast('卡片创建成功！');
+                }
 
-                console.log('创建新卡片:', newCard);
-                this.cards.push(newCard);
                 console.log('当前卡片总数:', this.cards.length);
                 this.saveCards();
                 this.closeNewCardModal();
                 
-                // 显示初始状态，不自动开始学习
-                this.showInitialState();
+                // 显示初始状态
+                if (!this.editingCardId) {
+                    this.showInitialState();
+                }
                 
-                // 显示成功提示
-                this.showToast('卡片创建成功！');
                 console.log('卡片保存完成');
             }
 
@@ -7748,7 +7834,7 @@
                                 </div>
                             </div>
                             <div class="card-actions" onclick="event.stopPropagation()">
-                                <button class="btn-study" onclick="flashcardManager.studyCard(${card.id})">学习</button>
+                                <button class="btn-edit" onclick="flashcardManager.editCard(${card.id})">编辑</button>
                                 <button class="btn-delete" onclick="flashcardManager.deleteCard(${card.id})">删除</button>
                             </div>
                         </div>
@@ -8030,10 +8116,55 @@
                 return daysSinceReview >= interval;
             }
 
-            // 删除卡片
-            deleteCard(cardId) {
-                if (!confirm('确定要删除这张卡片吗？')) return;
-                
+            // 初始化删除确认模态框
+            initDeleteModal() {
+                const modal = document.getElementById('confirm-modal');
+                const cancelBtn = document.getElementById('confirm-cancel');
+                const okBtn = document.getElementById('confirm-ok');
+
+                if (cancelBtn) {
+                    cancelBtn.addEventListener('click', () => {
+                        this.closeDeleteModal();
+                    });
+                }
+
+                if (okBtn) {
+                    okBtn.addEventListener('click', () => {
+                        if (this.deleteTargetId) {
+                            this.performDelete(this.deleteTargetId);
+                        }
+                        this.closeDeleteModal();
+                    });
+                }
+
+                // 点击外部关闭
+                if (modal) {
+                    modal.addEventListener('click', (e) => {
+                        if (e.target === modal) {
+                            this.closeDeleteModal();
+                        }
+                    });
+                }
+            }
+
+            openDeleteModal(cardId) {
+                this.deleteTargetId = cardId;
+                const modal = document.getElementById('confirm-modal');
+                if (modal) {
+                    modal.style.display = 'block';
+                }
+            }
+
+            closeDeleteModal() {
+                this.deleteTargetId = null;
+                const modal = document.getElementById('confirm-modal');
+                if (modal) {
+                    modal.style.display = 'none';
+                }
+            }
+
+            // 执行删除操作
+            performDelete(cardId) {
                 this.cards = this.cards.filter(card => card.id !== cardId);
                 this.saveCards();
                 this.showToast('卡片已删除');
@@ -8050,6 +8181,11 @@
                     // 如果还有卡片，显示初始状态
                     this.showInitialState();
                 }
+            }
+
+            // 删除卡片（仅触发模态框）
+            deleteCard(cardId) {
+                this.openDeleteModal(cardId);
             }
 
             // 更新统计信息
